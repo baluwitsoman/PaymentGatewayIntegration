@@ -1,0 +1,44 @@
+@*  File: Views/PaymentTest/Failure.cshtml  *@
+@model YourHrms.Controllers.ResultViewModel
+@{
+    ViewData["Title"] = "Payment failed";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5 text-center">
+                    <div class="display-1 text-danger mb-2"><i class="bi bi-x-circle-fill"></i></div>
+                    <h3 class="text-danger">Payment @Model.Status.ToLower()</h3>
+                    @if (!string.IsNullOrEmpty(Model.Message))
+                    {
+                        <p class="text-muted">@Model.Message</p>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Your payment could not be processed. No amount has been charged.</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.OrderReference))
+                    {
+                        <hr class="my-4" />
+                        <table class="table table-sm small text-start">
+                            <tr><th class="text-muted">Order reference</th><td><code>@Model.OrderReference</code></td></tr>
+                            @if (!string.IsNullOrEmpty(Model.ExternalReference))
+                            {
+                                <tr><th class="text-muted">Your reference</th><td><code>@Model.ExternalReference</code></td></tr>
+                            }
+                            @if (Model.AmountEgp > 0)
+                            {
+                                <tr><th class="text-muted">Amount</th><td>@Model.AmountEgp.ToString("N2") EGP</td></tr>
+                            }
+                        </table>
+                    }
+
+                    <a class="btn btn-primary" asp-action="Index">Try again</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,53 @@
+@page
+@model PaymentGateway.Web.Features.SuperAdmin.Companies.CreateModel
+@{
+    ViewData["Title"] = "New company";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">New company</h3>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Company code</label>
+                            <input asp-for="CompCode" class="form-control" placeholder="ACME" />
+                            <span asp-validation-for="CompCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Name</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Contact email</label>
+                            <input asp-for="ContactEmail" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Contact phone</label>
+                            <input asp-for="ContactPhone" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Currency</label>
+                            <input asp-for="DefaultCurrency" class="form-control" maxlength="3" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Notes</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" type="submit">Create company</button>
+                        <a class="btn btn-link" asp-page="Index">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

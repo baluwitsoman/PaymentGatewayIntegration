@@ -1,0 +1,50 @@
+@page "/pay/{reference}/return"
+@model PaymentGateway.Web.Features.PublicApi.Redirect.PayReturnModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Verifying payment";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @if (!string.IsNullOrEmpty(Model.RedirectTo))
+    {
+        <meta http-equiv="refresh" content="1;url=@Model.RedirectTo" />
+    }
+    <style>
+        body { background: #f1f5f9; min-height: 100vh; }
+        .verify-card { max-width: 480px; margin: 10vh auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card verify-card shadow-sm border-0">
+            <div class="card-body p-5 text-center">
+                @if (Model.Status == "verifying")
+                {
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <h5>Verifying your payment…</h5>
+                    <p class="text-muted small">This usually takes just a moment. Please don't close this window.</p>
+                    <script>setTimeout(() => location.reload(), 3000);</script>
+                }
+                else if (Model.Status == "paid")
+                {
+                    <i class="bi" style="font-size:3rem;color:#16a34a">✓</i>
+                    <h4 class="mt-2 text-success">Payment successful</h4>
+                    <p class="text-muted small">Returning you to the application…</p>
+                }
+                else
+                {
+                    <i class="bi" style="font-size:3rem;color:#dc2626">✕</i>
+                    <h4 class="mt-2 text-danger">Payment @Model.Status</h4>
+                    <p class="text-muted small">Returning you to the application…</p>
+                }
+            </div>
+        </div>
+    </div>
+</body>
+</html>

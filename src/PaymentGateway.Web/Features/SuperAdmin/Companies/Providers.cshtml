@@ -1,0 +1,62 @@
+@page "{id:guid}"
+@model PaymentGateway.Web.Features.SuperAdmin.Companies.ProvidersModel
+@{
+    ViewData["Title"] = "Providers";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">Providers — @Model.CompanyName</h3>
+</div>
+
+<p class="text-muted small">Each supported payment provider is listed below. Configure credentials per provider; methods can then be added under each configured provider.</p>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>Environment</th>
+                    <th class="text-end">Methods</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>
+                            <span class="fw-semibold">@r.Name</span>
+                            <span class="text-muted small ms-2">code: @r.Code</span>
+                        </td>
+                        <td>
+                            @if (!r.Configured)
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary">Not configured</span>
+                            }
+                            else if (r.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning-subtle text-warning">Inactive</span>
+                            }
+                        </td>
+                        <td class="text-muted small">@r.Environment</td>
+                        <td class="text-end">@r.MethodCount</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-page="Provider" asp-route-id="@Model.CompanyId" asp-route-code="@r.Code">@(r.Configured ? "Edit" : "Configure")</a>
+                            @if (r.Configured)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-page="Methods" asp-route-id="@Model.CompanyId" asp-route-providerCode="@r.Code">Methods</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

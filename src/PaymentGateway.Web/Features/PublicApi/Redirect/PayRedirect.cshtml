@@ -1,0 +1,107 @@
+@page "/pay/{reference}"
+@model PaymentGateway.Web.Features.PublicApi.Redirect.PayRedirectModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Pay";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    @if (!string.IsNullOrEmpty(Model.PaymentUrl))
+    {
+        <meta http-equiv="refresh" content="2;url=@Model.PaymentUrl" />
+    }
+    <style>
+        body { background: #f1f5f9; min-height: 100vh; }
+        .pay-card { max-width: 540px; margin: 8vh auto; }
+        .method-card { cursor: pointer; transition: all .15s ease; }
+        .method-card:hover { border-color: #0ea5e9; box-shadow: 0 4px 12px rgba(14,165,233,0.15); }
+        .provider-grouped { border-left: 3px solid #0ea5e9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card pay-card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                @if (!string.IsNullOrEmpty(Model.PaymentUrl))
+                {
+                    @* Initiated; redirecting to provider *@
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <h5>@Model.CompanyName</h5>
+                        <p class="text-muted mb-1">Amount</p>
+                        <h2 class="mb-4">@Model.Amount.ToString("N2") @Model.Currency</h2>
+                        <p class="text-muted small mb-3">Redirecting you to the secure payment page…</p>
+                        <a class="btn btn-primary w-100" href="@Model.PaymentUrl">Continue if not redirected</a>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(Model.Message))
+                {
+                    <div class="alert alert-warning">@Model.Message</div>
+                }
+                else
+                {
+                    @* Chooser *@
+                    <div class="text-center mb-4">
+                        <h5>@Model.CompanyName</h5>
+                        <p class="text-muted mb-1">Amount to pay</p>
+                        <h2 class="mb-0">@Model.Amount.ToString("N2") @Model.Currency</h2>
+                        <p class="text-muted small mt-2 mb-0">Reference: <code>@Model.Reference</code></p>
+                    </div>
+                    <h6 class="text-uppercase text-muted small mb-3">Choose a payment method</h6>
+
+                    var groups = Model.AvailableMethods.GroupBy(m => new { m.ProviderCode, m.ProviderName })
+                        .OrderBy(g => g.Min(m => m.SortOrder));
+
+                    foreach (var group in groups)
+                    {
+                        <div class="mb-3">
+                            <div class="text-muted small fw-semibold ps-2 mb-2">@group.Key.ProviderName</div>
+                            @foreach (var m in group.OrderBy(x => x.SortOrder))
+                            {
+                                <form method="post" class="mb-2">
+                                    <input type="hidden" name="methodId" value="@m.MethodId" />
+                                    <button type="submit" class="method-card card border w-100 text-start">
+                                        <div class="card-body py-3 d-flex align-items-center">
+                                            <div class="me-3">
+                                                @switch (m.MethodType)
+                                                {
+                                                    case PaymentGateway.Web.Domain.Enums.PaymentMethodType.Card:
+                                                        <i class="bi bi-credit-card-2-front fs-3 text-primary"></i> break;
+                                                    case PaymentGateway.Web.Domain.Enums.PaymentMethodType.MobileWallet:
+                                                        <i class="bi bi-phone fs-3 text-success"></i> break;
+                                                    case PaymentGateway.Web.Domain.Enums.PaymentMethodType.Installments:
+                                                        <i class="bi bi-calendar3 fs-3 text-warning"></i> break;
+                                                    case PaymentGateway.Web.Domain.Enums.PaymentMethodType.Kiosk:
+                                                        <i class="bi bi-shop fs-3 text-secondary"></i> break;
+                                                    case PaymentGateway.Web.Domain.Enums.PaymentMethodType.Cash:
+                                                        <i class="bi bi-cash-coin fs-3 text-secondary"></i> break;
+                                                }
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold">@m.DisplayName</div>
+                                                <div class="text-muted small">@m.MethodType</div>
+                                            </div>
+                                            <i class="bi bi-chevron-right text-muted"></i>
+                                        </div>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+
+                    @if (!Model.AvailableMethods.Any())
+                    {
+                        <div class="alert alert-warning small mb-0">No payment methods are currently available.</div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</body>
+</html>

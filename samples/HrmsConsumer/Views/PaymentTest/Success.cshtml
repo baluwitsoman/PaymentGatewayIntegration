@@ -1,0 +1,98 @@
+@*  File: Views/PaymentTest/Success.cshtml  *@
+@model YourHrms.Controllers.ResultViewModel
+@{
+    ViewData["Title"] = "Payment result";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5 text-center" id="result-card">
+                    @if (Model.Status == "Paid")
+                    {
+                        <div class="display-1 text-success mb-2"><i class="bi bi-check-circle-fill"></i></div>
+                        <h3 class="text-success">Payment received</h3>
+                        <p class="text-muted">Thank you. Your payment was successful.</p>
+                    }
+                    else if (Model.Status == "Failed" || Model.Status == "Cancelled" || Model.Status == "Expired")
+                    {
+                        <div class="display-1 text-danger mb-2"><i class="bi bi-x-circle-fill"></i></div>
+                        <h3 class="text-danger">Payment @Model.Status.ToLower()</h3>
+                        <p class="text-muted">Please try again or contact support.</p>
+                    }
+                    else
+                    {
+                        @* AwaitingPayment / Created — webhook not yet arrived; poll *@
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <h5>Verifying your payment…</h5>
+                        <p class="text-muted small">This usually takes a couple of seconds.</p>
+                    }
+
+                    <hr class="my-4" />
+                    <table class="table table-sm small text-start">
+                        <tr><th class="text-muted">Order reference</th><td><code>@Model.OrderReference</code></td></tr>
+                        @if (!string.IsNullOrEmpty(Model.ExternalReference))
+                        {
+                            <tr><th class="text-muted">Your reference</th><td><code>@Model.ExternalReference</code></td></tr>
+                        }
+                        <tr><th class="text-muted">Amount</th><td>@Model.AmountEgp.ToString("N2") EGP</td></tr>
+                        <tr><th class="text-muted">Status</th><td><span id="status-text">@Model.Status</span></td></tr>
+                        @if (Model.PaidAt.HasValue)
+                        {
+                            <tr><th class="text-muted">Paid at</th><td>@Model.PaidAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Provider))
+                        {
+                            <tr><th class="text-muted">Provider</th><td>@Model.Provider</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.LastTransactionId))
+                        {
+                            <tr><th class="text-muted">Transaction ID</th><td><code>@Model.LastTransactionId</code></td></tr>
+                        }
+                    </table>
+
+                    <a class="btn btn-outline-secondary" asp-action="Index">Make another payment</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @if (Model.Status != "Paid" && Model.Status != "Failed" && Model.Status != "Cancelled" && Model.Status != "Expired")
+    {
+        <script>
+            // Poll the API until status leaves the "verifying" range.
+            const ref = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderReference));
+            const terminal = ['Paid', 'Failed', 'Cancelled', 'Expired'];
+            let attempts = 0;
+            const maxAttempts = 30; // ~60 s
+
+            const poll = async () => {
+                attempts++;
+                try {
+                    const r = await fetch('@Url.Action("StatusJson", "PaymentTest")?ref=' + encodeURIComponent(ref), { cache: 'no-store' });
+                    if (r.ok) {
+                        const j = await r.json();
+                        document.getElementById('status-text').textContent = j.status;
+                        if (terminal.includes(j.status)) {
+                            // reload so the server-side rendered view shows the final state
+                            window.location.reload();
+                            return;
+                        }
+                    }
+                } catch (e) { /* swallow & retry */ }
+
+                if (attempts < maxAttempts) setTimeout(poll, 2000);
+                else {
+                    document.getElementById('result-card').insertAdjacentHTML(
+                        'beforeend',
+                        '<div class="alert alert-warning mt-3 small mb-0">Still verifying. You can safely close this page — we will email you the result.</div>'
+                    );
+                }
+            };
+            setTimeout(poll, 1500);
+        </script>
+    }
+}

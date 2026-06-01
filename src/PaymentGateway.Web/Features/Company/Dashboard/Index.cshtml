@@ -1,0 +1,107 @@
+@page
+@model PaymentGateway.Web.Features.Company.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">@Model.CompanyName</h3>
+        <p class="text-muted small mb-0">Operational overview</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small">Total received</div>
+                <div class="display-6 fw-semibold mt-1">@((Model.TotalReceivedMinor / 100m).ToString("N2"))</div>
+                <div class="text-muted small">EGP, lifetime</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small">Today</div>
+                <div class="display-6 fw-semibold mt-1 text-success">@((Model.TodayReceivedMinor / 100m).ToString("N2"))</div>
+                <div class="text-muted small">EGP received today</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small">Paid orders</div>
+                <div class="display-6 fw-semibold mt-1">@Model.TotalPaidCount.ToString("N0")</div>
+                <div class="text-muted small">@Model.TotalFailedCount failed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small">Customers</div>
+                <div class="display-6 fw-semibold mt-1">@Model.CustomersCount.ToString("N0")</div>
+                <div class="text-muted small">unique payers</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="mb-3">Last 30 days received</h6>
+                <canvas id="trend" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="mb-3">Recent activity</h6>
+                <div class="list-group list-group-flush small">
+                    @foreach (var r in Model.Recent)
+                    {
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">@r.CustomerName</div>
+                                <div class="text-muted">@r.Reference</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-semibold">@((r.AmountMinor / 100m).ToString("N2")) @r.Currency</div>
+                                <div class="text-muted small">@r.Status</div>
+                            </div>
+                        </div>
+                    }
+                    @if (!Model.Recent.Any())
+                    {
+                        <p class="text-muted text-center mb-0 py-4">No payments yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last30Days.Select(d => d.Date.ToString("MMM dd"))));
+        const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last30Days.Select(d => d.AmountMinor / 100m)));
+        new Chart(document.getElementById('trend'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{ label: 'Received', data: data, backgroundColor: '#0ea5e9' }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+}

@@ -1,0 +1,84 @@
+@page "{id:guid}/{providerCode}"
+@model PaymentGateway.Web.Features.SuperAdmin.Companies.MethodsModel
+@{
+    ViewData["Title"] = "Methods";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Providers" asp-route-id="@Model.Id" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">@Model.ProviderName methods — @Model.CompanyName</h3>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Order</th>
+                            <th>Method</th>
+                            <th>Integration ID</th>
+                            <th>Display name</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.Items)
+                        {
+                            <tr>
+                                <td>@m.SortOrder</td>
+                                <td><span class="badge bg-secondary-subtle text-dark">@m.MethodType</span></td>
+                                <td><code>@m.ProviderIntegrationId</code></td>
+                                <td>@m.DisplayName</td>
+                                <td>
+                                    @if (m.IsEnabled) { <span class="badge bg-success-subtle text-success">Enabled</span> }
+                                    else { <span class="badge bg-secondary-subtle text-secondary">Disabled</span> }
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" asp-page-handler="Toggle" asp-route-methodId="@m.Id" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-power"></i></button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" asp-route-methodId="@m.Id" class="d-inline" onsubmit="return confirm('Delete this method?')">
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.Items.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-4">No methods for this provider yet.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h6 class="mb-3">Add method</h6>
+                <form method="post" asp-page-handler="Add">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Type</label>
+                        <select asp-for="New.MethodType" asp-items="Html.GetEnumSelectList<PaymentGateway.Web.Domain.Enums.PaymentMethodType>()" class="form-select"></select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Provider integration ID</label>
+                        <input asp-for="New.ProviderIntegrationId" class="form-control" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Display name</label>
+                        <input asp-for="New.DisplayName" class="form-control" placeholder="Visa / Mastercard" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Sort order</label>
+                        <input asp-for="New.SortOrder" type="number" class="form-control" />
+                    </div>
+                    <button class="btn btn-primary w-100">Add method</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

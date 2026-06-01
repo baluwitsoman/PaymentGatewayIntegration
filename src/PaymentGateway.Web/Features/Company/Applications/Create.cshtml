@@ -1,0 +1,54 @@
+@page
+@model PaymentGateway.Web.Features.Company.Applications.CreateModel
+@{
+    ViewData["Title"] = "New application";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">New application</h3>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">App code</label>
+                            <input asp-for="AppCode" class="form-control" placeholder="WITS-ERP-AR" />
+                            <span asp-validation-for="AppCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Name</label>
+                            <input asp-for="Name" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Success return URL</label>
+                            <input asp-for="SuccessReturnUrl" class="form-control" placeholder="https://erp.example/payment/success" />
+                            <span asp-validation-for="SuccessReturnUrl" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Failure return URL</label>
+                            <input asp-for="FailureReturnUrl" class="form-control" placeholder="https://erp.example/payment/failed" />
+                            <span asp-validation-for="FailureReturnUrl" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Pending return URL (optional)</label>
+                            <input asp-for="PendingReturnUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Server webhook URL (optional)</label>
+                            <input asp-for="WebhookUrl" class="form-control" placeholder="https://erp.example/api/payment-webhooks" />
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" type="submit">Create</button>
+                        <a class="btn btn-link" asp-page="Index">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

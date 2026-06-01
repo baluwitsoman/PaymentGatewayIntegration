@@ -1,0 +1,75 @@
+@page "{id:guid}"
+@model PaymentGateway.Web.Features.Company.Payments.DetailModel
+@{
+    ViewData["Title"] = "Payment detail";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">@Model.Order.OrderReference</h3>
+    <span class="ms-3 badge bg-secondary-subtle text-dark">@Model.Order.Status</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small">Order</h6>
+                <table class="table table-sm">
+                    <tr><th>Amount</th><td>@((Model.Order.AmountMinor / 100m).ToString("N2")) @Model.Order.Currency</td></tr>
+                    <tr><th>Customer</th><td>@Model.Customer.FullName (<code>@Model.Customer.CustomerCode</code>)</td></tr>
+                    <tr><th>Mobile</th><td>@Model.Customer.MobileNumber</td></tr>
+                    <tr><th>Application</th><td>@Model.App.Name (<code>@Model.App.AppCode</code>)</td></tr>
+                    <tr><th>External ref</th><td>@Model.Order.ExternalReference</td></tr>
+                    <tr><th>Description</th><td>@Model.Order.Description</td></tr>
+                    <tr><th>Created</th><td>@Model.Order.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</td></tr>
+                    <tr><th>Paid at</th><td>@(Model.Order.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss"))</td></tr>
+                    <tr><th>Provider</th><td>@Model.Order.SelectedProviderCode</td></tr>
+                    <tr><th>Provider order</th><td><code>@Model.Order.ProviderOrderId</code></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted small">Transactions</h6>
+                @if (!Model.Transactions.Any())
+                {
+                    <p class="text-muted">No transactions received yet.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var t in Model.Transactions)
+                        {
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">
+                                            #@t.ProviderTransactionId
+                                            @if (t.IsSuccess) { <span class="badge bg-success-subtle text-success ms-1">Success</span> }
+                                            else if (t.IsPending) { <span class="badge bg-warning-subtle text-warning ms-1">Pending</span> }
+                                            else { <span class="badge bg-danger-subtle text-danger ms-1">Failed</span> }
+                                            @if (t.IsRefund) { <span class="badge bg-secondary-subtle text-secondary ms-1">Refund</span> }
+                                            @if (t.IsVoid) { <span class="badge bg-secondary-subtle text-secondary ms-1">Void</span> }
+                                        </div>
+                                        <div class="small text-muted">@t.ReceivedAt.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-semibold">@((t.AmountMinor / 100m).ToString("N2"))</div>
+                                        <div class="small text-muted">@t.SourceType</div>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(t.ErrorMessage))
+                                {
+                                    <div class="small text-danger mt-1">@t.ErrorMessage</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>

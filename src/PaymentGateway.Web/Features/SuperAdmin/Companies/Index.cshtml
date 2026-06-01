@@ -1,0 +1,67 @@
+@page
+@model PaymentGateway.Web.Features.SuperAdmin.Companies.IndexModel
+@{
+    ViewData["Title"] = "Companies";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0"><i class="bi bi-building"></i> Companies</h3>
+    <a class="btn btn-primary" asp-page="Create"><i class="bi bi-plus-lg"></i> New company</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px">
+        <input class="form-control" name="q" value="@Model.Query" placeholder="Search by code or name" />
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th class="text-end">Apps</th>
+                    <th class="text-end">Customers</th>
+                    <th class="text-end">Total received</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Items)
+                {
+                    <tr>
+                        <td><code>@row.CompCode</code></td>
+                        <td>@row.Name</td>
+                        <td class="text-muted small">@row.Email</td>
+                        <td>
+                            @if (row.Status == "Active")
+                            {
+                                <span class="badge bg-success-subtle text-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning-subtle text-warning">Suspended</span>
+                            }
+                        </td>
+                        <td class="text-end">@row.Applications</td>
+                        <td class="text-end">@row.CustomersCount.ToString("N0")</td>
+                        <td class="text-end fw-semibold">@((row.TotalPaidMinor / 100m).ToString("N2"))</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-page="Edit" asp-route-id="@row.Id"><i class="bi bi-pencil"></i></a>
+                            <a class="btn btn-sm btn-outline-secondary" asp-page="Providers" asp-route-id="@row.Id">Providers</a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Items.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">No companies yet.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

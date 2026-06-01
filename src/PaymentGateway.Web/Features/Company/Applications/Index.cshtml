@@ -1,0 +1,55 @@
+@page
+@model PaymentGateway.Web.Features.Company.Applications.IndexModel
+@{
+    ViewData["Title"] = "Applications";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0"><i class="bi bi-app"></i> Applications</h3>
+    <a class="btn btn-primary" asp-page="Create"><i class="bi bi-plus-lg"></i> New application</a>
+</div>
+
+<div class="row g-3">
+    @foreach (var a in Model.Items)
+    {
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1">@a.Name</h5>
+                            <div class="text-muted small"><code>@a.AppCode</code></div>
+                        </div>
+                        <div>
+                            @if (a.IsActive) { <span class="badge bg-success-subtle text-success">Active</span> }
+                            else { <span class="badge bg-secondary-subtle text-secondary">Disabled</span> }
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="small text-muted mb-2">Success → <code>@a.SuccessReturnUrl</code></div>
+                    <div class="small text-muted mb-2">Failure → <code>@a.FailureReturnUrl</code></div>
+                    @if (!string.IsNullOrEmpty(a.WebhookUrl))
+                    {
+                        <div class="small text-muted mb-2">Webhook → <code>@a.WebhookUrl</code></div>
+                    }
+                    <div class="mt-3">
+                        <span class="badge bg-light text-dark me-2">@a.ApiKeys.Count(k => k.IsActive && k.RevokedAt == null) active key(s)</span>
+                        <a class="btn btn-sm btn-outline-secondary" asp-page="Edit" asp-route-id="@a.Id">Edit</a>
+                        <a class="btn btn-sm btn-outline-primary" asp-page="Keys" asp-route-id="@a.Id">Manage keys</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!Model.Items.Any())
+    {
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center text-muted py-5">
+                    <p>No applications yet. Create one so your ERP can call the orchestrator.</p>
+                    <a class="btn btn-primary" asp-page="Create">Create your first application</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

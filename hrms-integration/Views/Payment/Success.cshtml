@@ -1,0 +1,109 @@
+@*  File: Views/Payment/Success.cshtml  *@
+@model ERPMultiTenent.Application.Amm.PaymentResultVm
+@{
+    ViewData["Title"] = "Payment result";
+    var terminal = Model.Status is "Paid" or "Failed" or "Cancelled" or "Expired";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5 text-center" id="result-card">
+                    @if (Model.Status == "Paid")
+                    {
+                        <div class="display-1 text-success mb-2">&#10004;</div>
+                        <h3 class="text-success">Payment received</h3>
+                        @if (Model.IsLoggedIn && !string.IsNullOrEmpty(Model.UserDisplayName))
+                        {
+                            <p class="text-muted">Thank you, @Model.UserDisplayName.</p>
+                        }
+                        else
+                        {
+                            <p class="text-muted">Thank you. Your payment was successful.</p>
+                        }
+                    }
+                    else if (terminal)
+                    {
+                        <div class="display-1 text-danger mb-2">&#10006;</div>
+                        <h3 class="text-danger">Payment @Model.Status.ToLower()</h3>
+                        <p class="text-muted">Please try again or contact support.</p>
+                    }
+                    else
+                    {
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <h5>Verifying your payment&hellip;</h5>
+                        <p class="text-muted small">This usually takes a couple of seconds.</p>
+                    }
+
+                    <hr class="my-4" />
+                    <table class="table table-sm small text-start">
+                        <tr><th class="text-muted">Order reference</th><td><code>@Model.OrderReference</code></td></tr>
+                        @if (Model.InvoiceId.HasValue)
+                        {
+                            <tr><th class="text-muted">Invoice</th><td>INV-@Model.InvoiceId</td></tr>
+                        }
+                        <tr><th class="text-muted">Amount</th><td>@Model.AmountPaid.ToString("N3") @Model.Currency</td></tr>
+                        <tr><th class="text-muted">Status</th><td><span id="status-text">@Model.Status</span></td></tr>
+                        @if (Model.PaidAt.HasValue)
+                        {
+                            <tr><th class="text-muted">Paid at</th><td>@Model.PaidAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Provider))
+                        {
+                            <tr><th class="text-muted">Provider</th><td>@Model.Provider</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ProviderTransactionId))
+                        {
+                            <tr><th class="text-muted">Transaction ID</th><td><code>@Model.ProviderTransactionId</code></td></tr>
+                        }
+                    </table>
+
+                    @if (Model.IsLoggedIn)
+                    {
+                        <a class="btn btn-outline-secondary" href="/">Continue to dashboard</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" href="/Account/Login">Sign in</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!terminal)
+{
+    <script>
+        // Webhook race — poll until status leaves the non-terminal set.
+        const ref = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderReference));
+        const terminal = ['Paid', 'Failed', 'Cancelled', 'Expired'];
+        let attempts = 0;
+        const maxAttempts = 30; // ~60s
+
+        const poll = async () => {
+            attempts++;
+            try {
+                const r = await fetch('/Payment/StatusJson?ref=' + encodeURIComponent(ref), { cache: 'no-store' });
+                if (r.ok) {
+                    const j = await r.json();
+                    document.getElementById('status-text').textContent = j.status;
+                    if (terminal.includes(j.status)) {
+                        window.location.reload();
+                        return;
+                    }
+                }
+            } catch (e) { /* swallow */ }
+
+            if (attempts < maxAttempts) setTimeout(poll, 2000);
+            else {
+                document.getElementById('result-card').insertAdjacentHTML(
+                    'beforeend',
+                    '<div class="alert alert-warning mt-3 small mb-0">Still verifying. You can safely close this page &mdash; we will email you the result.</div>'
+                );
+            }
+        };
+        setTimeout(poll, 1500);
+    </script>
+}

@@ -1,0 +1,67 @@
+@page
+@model PaymentGateway.Web.Features.Company.Customers.IndexModel
+@{
+    ViewData["Title"] = "Customers";
+    var totalPages = (int)Math.Ceiling((double)Model.Total / Model.PageSize);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0"><i class="bi bi-person"></i> Customers</h3>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:480px">
+        <input class="form-control" name="q" value="@Model.Query" placeholder="Search by code, name or mobile" />
+        <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle table-hover">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>Email</th>
+                    <th class="text-end">Orders</th>
+                    <th class="text-end">Total paid</th>
+                    <th>Last paid</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Items)
+                {
+                    <tr>
+                        <td><code>@c.CustomerCode</code></td>
+                        <td>@c.FullName</td>
+                        <td class="text-muted small">@c.MobileNumber</td>
+                        <td class="text-muted small">@c.Email</td>
+                        <td class="text-end">@c.OrderCount</td>
+                        <td class="text-end fw-semibold">@((c.TotalPaidMinor / 100m).ToString("N2"))</td>
+                        <td class="text-muted small">@(c.LastPaymentAt?.ToString("yyyy-MM-dd HH:mm"))</td>
+                    </tr>
+                }
+                @if (!Model.Items.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">No customers found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (totalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm">
+            @for (var i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                    <a class="page-link" asp-route-page="@i" asp-route-q="@Model.Query">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

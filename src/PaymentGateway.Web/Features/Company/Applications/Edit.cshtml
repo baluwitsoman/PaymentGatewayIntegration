@@ -1,0 +1,106 @@
+@page "{id:guid}"
+@model PaymentGateway.Web.Features.Company.Applications.EditModel
+@{
+    ViewData["Title"] = "Edit application";
+    var newSecret = TempData["NewWebhookSecret"] as string;
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">@Model.Name <small class="text-muted">(@Model.AppCode)</small></h3>
+</div>
+
+@if (!string.IsNullOrEmpty(newSecret))
+{
+    <div class="alert alert-warning shadow-sm">
+        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Copy this webhook secret now — it won't be shown again.</h6>
+        <code class="user-select-all d-block p-2 bg-light rounded mt-2">@newSecret</code>
+        <p class="small mb-0 mt-2">Paste this into your consumer app's configuration (e.g. <code>PaymentGateway:WebhookSecret</code> in appsettings.json).</p>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Name</label>
+                            <input asp-for="Name" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Success return URL</label>
+                            <input asp-for="SuccessReturnUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Failure return URL</label>
+                            <input asp-for="FailureReturnUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Pending return URL</label>
+                            <input asp-for="PendingReturnUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Server webhook URL</label>
+                            <input asp-for="WebhookUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">
+                                Webhook signing secret
+                                @if (Model.HasWebhookSecret)
+                                {
+                                    <span class="badge bg-success-subtle text-success ms-1">configured</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-warning ms-1">not configured</span>
+                                }
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="WebhookSecret" type="password" class="form-control"
+                                       autocomplete="off"
+                                       placeholder="@(Model.HasWebhookSecret ? "leave blank to keep current" : "paste a strong secret, or click Generate →")" />
+                                <button class="btn btn-outline-secondary" type="submit"
+                                        asp-page-handler="GenerateSecret"
+                                        formnovalidate
+                                        onclick="return confirm('Generate a new webhook secret? Any consumer using the old secret will stop receiving valid webhooks until you update them.')">
+                                    <i class="bi bi-magic"></i> Generate
+                                </button>
+                            </div>
+                            <span asp-validation-for="WebhookSecret" class="text-danger small"></span>
+                            <div class="form-text small">
+                                A webhook URL requires a signing secret. Click <strong>Generate</strong> for a strong random one — it's shown once, then encrypted at rest.
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" type="submit">Save</button>
+                        <a class="btn btn-link" asp-page="Index">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h6 class="text-uppercase small text-muted">How the webhook works</h6>
+                <p class="small mb-2">
+                    When a payment status changes, we POST to your <strong>Webhook URL</strong> with an
+                    <code>X-Signature</code> header containing <code>HMAC-SHA256(body, secret)</code>.
+                </p>
+                <p class="small mb-0">
+                    Your consumer verifies the signature with the same secret. If verification fails, reject the request — it's not from us.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,88 @@
+@page "{id:guid}/{code}"
+@model PaymentGateway.Web.Features.SuperAdmin.Companies.ProviderModel
+@{
+    ViewData["Title"] = $"{Model.ProviderName} credentials";
+}
+
+<div class="d-flex align-items-center mb-3">
+    <a asp-page="Providers" asp-route-id="@Model.CompanyId" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+    <h3 class="mb-0">@Model.ProviderName — @Model.CompanyName</h3>
+</div>
+
+@if (!Model.HasConfig)
+{
+    <div class="alert alert-info">No credentials yet. Fill in the API key and HMAC secret to enable this provider.</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+                <form method="post">
+                    <input type="hidden" asp-for="CompanyId" />
+                    <input type="hidden" asp-for="ProviderCode" />
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Environment</label>
+                            <select asp-for="Environment" asp-items="Html.GetEnumSelectList<PaymentGateway.Web.Domain.Enums.ProviderEnvironment>()" class="form-select"></select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold">Base URL</label>
+                            <input asp-for="BaseUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Sort order</label>
+                            <input asp-for="SortOrder" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">API key @if (Model.HasConfig) { <span class="text-muted small">(leave blank to keep current)</span> }</label>
+                            <input asp-for="ApiKey" type="password" class="form-control" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">HMAC secret @if (Model.HasConfig) { <span class="text-muted small">(leave blank to keep)</span> }</label>
+                            <input asp-for="HmacSecret" type="password" class="form-control" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Public key (optional)</label>
+                            <input asp-for="PublicKey" type="password" class="form-control" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Secret key (optional)</label>
+                            <input asp-for="SecretKey" type="password" class="form-control" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Display label (customer-facing)</label>
+                            <input asp-for="DisplayLabel" class="form-control" placeholder="default uses the provider name" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" />
+                                <label class="form-check-label" asp-for="IsActive">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Provider-specific config (JSON)</label>
+                            <textarea asp-for="ExtraConfigJson" class="form-control font-monospace" rows="4"></textarea>
+                            <span asp-validation-for="ExtraConfigJson" class="text-danger small"></span>
+                            <div class="form-text small">For Paymob put <code>iframeId</code>. For BankMuscat/NBO put <code>merchantId</code> / <code>terminalId</code>. Each provider reads its own keys.</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" type="submit">Save</button>
+                        <a class="btn btn-link" asp-page="Providers" asp-route-id="@Model.CompanyId">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h6 class="text-uppercase small text-muted">Provider webhook URL</h6>
+                <p class="small mb-2">Set this as the webhook / transaction processed callback URL in the provider's dashboard.</p>
+                <code class="user-select-all small">@Model.WebhookUrl</code>
+            </div>
+        </div>
+    </div>
+</div>
