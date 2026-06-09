@@ -14,12 +14,15 @@ public class PaymobProvider : IPaymentProvider
 
     private readonly HttpClient _http;
     private readonly ISecretProtector _protector;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<PaymobProvider> _logger;
 
-    public PaymobProvider(HttpClient http, ISecretProtector protector, ILogger<PaymobProvider> logger)
+    public PaymobProvider(HttpClient http, ISecretProtector protector,
+        IConfiguration configuration, ILogger<PaymobProvider> logger)
     {
         _http = http;
         _protector = protector;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -28,13 +31,152 @@ public class PaymobProvider : IPaymentProvider
         var baseUrl = ctx.Config.BaseUrl.TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl)) baseUrl = "https://accept.paymob.com";
 
+        _logger.LogInformation(
+            "Paymob.Initiate START | base={Base} order={Ref} amountMinor={Amt} currency={Cur} integrationId={Iid}",
+            baseUrl, ctx.Order.OrderReference, ctx.Order.AmountMinor, ctx.Order.Currency, ctx.Method.ProviderIntegrationId);
+
+        // Paymob has two generations. Detect based on which credentials are present:
+        //  - Unified Intention API (newer; Oman + most new accounts): Secret Key + Public Key.
+        //  - Legacy "Accept" flow (older accounts): API Key.
+        // The two are NOT interchangeable. Secret Key cannot be used as api_key.
+        if (ctx.Config.SecretKeyEncrypted != null && ctx.Config.PublicKeyEncrypted != null)
+        {
+            _logger.LogInformation("Paymob.Initiate | using UNIFIED Intention API path");
+            return await InitiateUnifiedAsync(ctx, baseUrl, ct);
+        }
+
+        _logger.LogInformation("Paymob.Initiate | using LEGACY api_key path");
+        return await InitiateLegacyAsync(ctx, baseUrl, ct);
+    }
+
+    // ====================================================================
+    // Unified Intention API (newer Paymob accounts)
+    //   POST /v1/intention/   with   Authorization: Token <secret_key>
+    //   → response has client_secret
+    //   → redirect customer to /unifiedcheckout/?publicKey=...&clientSecret=...
+    // ====================================================================
+    private async Task<ProviderInitResult> InitiateUnifiedAsync(
+        ProviderInitContext ctx, string baseUrl, CancellationToken ct)
+    {
+        var secretKey = _protector.Decrypt(ctx.Config.SecretKeyEncrypted!);
+        var publicKey = _protector.Decrypt(ctx.Config.PublicKeyEncrypted!);
+
+        if (!long.TryParse(ctx.Method.ProviderIntegrationId, out var integrationIdLong))
+            throw new InvalidOperationException(
+                $"Paymob integration_id must be numeric, got '{ctx.Method.ProviderIntegrationId}'. " +
+                "Check Methods page — paste the numeric ID from the Paymob portal, not the display name.");
+
+        var orchestratorBase = _configuration["Orchestrator:BaseUrl"]?.TrimEnd('/') ?? "";
+        var notificationUrl = $"{orchestratorBase}/webhooks/Paymob/{ctx.Config.CompanyId}";
+        var redirectionUrl = $"{orchestratorBase}/pay/return";
+
+        var (first, last) = SplitName(ctx.Customer.FullName);
+
+        var body = new
+        {
+            amount = ctx.Order.AmountMinor,
+            currency = ctx.Order.Currency,
+            payment_methods = new long[] { integrationIdLong },
+            items = new[]
+            {
+                new
+                {
+                    name = ctx.Order.Description ?? ctx.Order.OrderReference,
+                    amount = ctx.Order.AmountMinor,
+                    description = ctx.Order.Description ?? ctx.Order.OrderReference,
+                    quantity = 1
+                }
+            },
+            billing_data = new
+            {
+                first_name = first,
+                last_name = last,
+                phone_number = ctx.Customer.MobileNumber ?? "+96898989782",
+                email = ctx.Customer.Email ?? "na@na.com",
+                country = "OM",
+                city = "NA",
+                street = "NA",
+                building = "NA",
+                floor = "NA",
+                apartment = "NA",
+                state = "NA",
+                postal_code = "NA",
+            },
+            customer = new
+            {
+                first_name = first,
+                last_name = last,
+                email = ctx.Customer.Email ?? "balavrs@gmail.com",
+                extras = new { customer_code = ctx.Customer.CustomerCode }
+            },
+            extras = new { merchant_order_id = ctx.Order.OrderReference },
+            special_reference = ctx.Order.OrderReference,
+            notification_url = notificationUrl,
+            redirection_url = redirectionUrl,
+        };
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/intention/");
+        req.Headers.TryAddWithoutValidation("Authorization", $"Token {secretKey}");
+        req.Content = JsonContent.Create(body);
+
+        var res = await _http.SendAsync(req, ct);
+        var respBody = await res.Content.ReadAsStringAsync(ct);
+
+        if (!res.IsSuccessStatusCode)
+        {
+            _logger.LogError("Paymob.Intention FAILED status={Status} body={Body}", (int)res.StatusCode, respBody);
+            throw new InvalidOperationException($"Paymob intention failed: {(int)res.StatusCode} {respBody}");
+        }
+
+        using var doc = JsonDocument.Parse(respBody);
+        var root = doc.RootElement;
+        var intentionId = root.GetProperty("id").ValueKind == JsonValueKind.String
+            ? root.GetProperty("id").GetString()!
+            : root.GetProperty("id").ToString();
+        var clientSecret = root.GetProperty("client_secret").GetString()
+            ?? throw new InvalidOperationException("Paymob intention response missing client_secret");
+
+        _logger.LogInformation("Paymob.Intention OK intentionId={Id} clientSecretLen={Len}",
+            intentionId, clientSecret.Length);
+
+        var redirectUrl = $"{baseUrl}/unifiedcheckout/?publicKey={Uri.EscapeDataString(publicKey)}&clientSecret={Uri.EscapeDataString(clientSecret)}";
+
+        _logger.LogInformation(
+            "Paymob.Initiate DONE (unified) | order={Ref} intentionId={Id} redirect={Redirect}",
+            ctx.Order.OrderReference, intentionId, redirectUrl);
+
+        return new ProviderInitResult(intentionId, clientSecret, redirectUrl);
+    }
+
+    // ====================================================================
+    // Legacy api_key flow (older accounts that still have API Key in portal)
+    //   POST /api/auth/tokens   → bearer token
+    //   POST /api/ecommerce/orders   → paymob_order_id
+    //   POST /api/acceptance/payment_keys   → payment_token
+    //   → redirect to /api/acceptance/iframes/{iframeId}?payment_token=...
+    // ====================================================================
+    private async Task<ProviderInitResult> InitiateLegacyAsync(
+        ProviderInitContext ctx, string baseUrl, CancellationToken ct)
+    {
+        if (ctx.Config.ApiKeyEncrypted == null)
+            throw new InvalidOperationException(
+                "Paymob: neither (SecretKey+PublicKey) nor ApiKey is configured. " +
+                "Newer Paymob accounts use Secret/Public keys; older accounts use the API key. " +
+                "Configure one path in the Provider config.");
+
         var apiKey = _protector.Decrypt(ctx.Config.ApiKeyEncrypted);
 
         // 1. auth
         var authRes = await _http.PostAsJsonAsync($"{baseUrl}/api/auth/tokens",
             new PaymobAuthRequest(apiKey), ct);
-        authRes.EnsureSuccessStatusCode();
+        if (!authRes.IsSuccessStatusCode)
+        {
+            var err = await authRes.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Paymob.Auth FAILED status={Status} body={Body}", (int)authRes.StatusCode, err);
+            throw new InvalidOperationException($"Paymob auth failed: {(int)authRes.StatusCode} {err}");
+        }
         var auth = (await authRes.Content.ReadFromJsonAsync<PaymobAuthResponse>(cancellationToken: ct))!;
+        _logger.LogInformation("Paymob.Auth OK tokenLen={Len}", auth.Token.Length);
 
         // 2. register order
         var orderRes = await _http.PostAsJsonAsync($"{baseUrl}/api/ecommerce/orders",
@@ -45,8 +187,14 @@ public class PaymobProvider : IPaymentProvider
                 Currency: ctx.Order.Currency,
                 MerchantOrderId: ctx.Order.OrderReference,
                 Items: Array.Empty<object>()), ct);
-        orderRes.EnsureSuccessStatusCode();
+        if (!orderRes.IsSuccessStatusCode)
+        {
+            var err = await orderRes.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Paymob.RegisterOrder FAILED status={Status} body={Body}", (int)orderRes.StatusCode, err);
+            throw new InvalidOperationException($"Paymob register order failed: {(int)orderRes.StatusCode} {err}");
+        }
         var paymobOrder = (await orderRes.Content.ReadFromJsonAsync<PaymobOrderResponse>(cancellationToken: ct))!;
+        _logger.LogInformation("Paymob.RegisterOrder OK paymobOrderId={Id}", paymobOrder.Id);
 
         // 3. payment key
         var (first, last) = SplitName(ctx.Customer.FullName);
@@ -67,8 +215,14 @@ public class PaymobProvider : IPaymentProvider
                 BillingData: billing,
                 Currency: ctx.Order.Currency,
                 IntegrationId: integrationIdLong), ct);
-        keyRes.EnsureSuccessStatusCode();
+        if (!keyRes.IsSuccessStatusCode)
+        {
+            var err = await keyRes.Content.ReadAsStringAsync(ct);
+            _logger.LogError("Paymob.PaymentKey FAILED status={Status} body={Body}", (int)keyRes.StatusCode, err);
+            throw new InvalidOperationException($"Paymob payment key failed: {(int)keyRes.StatusCode} {err}");
+        }
         var key = (await keyRes.Content.ReadFromJsonAsync<PaymobPaymentKeyResponse>(cancellationToken: ct))!;
+        _logger.LogInformation("Paymob.PaymentKey OK tokenLen={Len}", key.Token.Length);
 
         // Iframe ID is provider-specific config, stored in ExtraConfigJson.
         var iframeId = ReadIframeId(ctx.Config.ExtraConfigJson);
@@ -76,6 +230,10 @@ public class PaymobProvider : IPaymentProvider
         var redirectUrl = !string.IsNullOrWhiteSpace(iframeId)
             ? $"{baseUrl}/api/acceptance/iframes/{iframeId}?payment_token={key.Token}"
             : $"{baseUrl}/api/acceptance/post_pay?payment_token={key.Token}";
+
+        _logger.LogInformation(
+            "Paymob.Initiate DONE | order={Ref} paymobOrderId={Id} redirect={Redirect}",
+            ctx.Order.OrderReference, paymobOrder.Id, redirectUrl);
 
         return new ProviderInitResult(paymobOrder.Id.ToString(), key.Token, redirectUrl);
     }

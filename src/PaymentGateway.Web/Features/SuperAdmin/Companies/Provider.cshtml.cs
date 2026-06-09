@@ -108,9 +108,21 @@ public class ProviderModel : PageModel
 
         if (isNew)
         {
-            if (cfg.ApiKeyEncrypted == null || cfg.HmacSecretEncrypted == null)
+            // For Paymob: either the legacy ApiKey OR the newer (SecretKey + PublicKey) pair must be present.
+            // For other providers: ApiKey alone is fine (we'll generalise per-provider as we add them).
+            var hasLegacyKey = cfg.ApiKeyEncrypted != null;
+            var hasUnifiedPair = cfg.SecretKeyEncrypted != null && cfg.PublicKeyEncrypted != null;
+
+            if (!hasLegacyKey && !hasUnifiedPair)
             {
-                ModelState.AddModelError("", "API key and HMAC secret are required on initial setup.");
+                ModelState.AddModelError("",
+                    "Provide either an API key (older Paymob accounts) OR a Secret key + Public key (newer Paymob accounts).");
+                await OnGetAsync(CompanyId, ProviderCode);
+                return Page();
+            }
+            if (cfg.HmacSecretEncrypted == null)
+            {
+                ModelState.AddModelError(nameof(HmacSecret), "HMAC secret is required.");
                 await OnGetAsync(CompanyId, ProviderCode);
                 return Page();
             }

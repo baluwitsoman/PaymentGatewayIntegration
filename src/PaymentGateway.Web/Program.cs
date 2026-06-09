@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using PaymentGateway.Web.Features.PublicApi.Payments;
 using PaymentGateway.Web.Features.PublicApi.Webhooks;
+using PaymentGateway.Web.Infrastructure.Logging;
 using PaymentGateway.Web.Infrastructure.Multitenancy;
 using PaymentGateway.Web.Infrastructure.Outbox;
 using PaymentGateway.Web.Infrastructure.Persistence;
@@ -11,8 +12,25 @@ using PaymentGateway.Web.Infrastructure.Providers;
 using PaymentGateway.Web.Infrastructure.Providers.Paymob;
 using PaymentGateway.Web.Infrastructure.Security;
 using PaymentGateway.Web.Infrastructure.Startup;
+using Serilog;
+
+// --- Serilog: daily rolling file + console -----------------------------------
+// Files land in ./logs/orchestrator-YYYY-MM-DD.log. 14 days retention.
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/orchestrator-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext} | {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 // --- Persistence -------------------------------------------------------------
 builder.Services.AddDbContext<AppDbContext>((sp, opts) =>
@@ -90,6 +108,10 @@ if (!app.Environment.IsDevelopment())
 app.UsePathBase("/PaymentGateway");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Log every public-facing request/response BEFORE routing so we capture 404s too.
+app.UsePublicApiLogging();
+
 app.UseRouting();
 
 app.UseAuthentication();

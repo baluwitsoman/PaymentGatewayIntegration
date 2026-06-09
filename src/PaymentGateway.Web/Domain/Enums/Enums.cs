@@ -20,6 +20,7 @@ public enum PaymentProviderCode : short
     Paymob = 1,
     BankMuscat = 2,
     NBO = 3,
+    GermanPay=4,
 }
 
 public enum PaymentMethodType : short

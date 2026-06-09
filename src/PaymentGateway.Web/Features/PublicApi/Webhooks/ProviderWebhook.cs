@@ -20,8 +20,13 @@ public static class ProviderWebhook
         Guid companyId,
         AppDbContext db,
         IPaymentProviderRegistry registry,
+        ILoggerFactory loggerFactory,
         CancellationToken ct)
     {
+        var logger = loggerFactory.CreateLogger("ProviderWebhook");
+        logger.LogInformation("Webhook RX provider={Provider} company={Co} from={Ip}",
+            providerCode, companyId, http.Connection.RemoteIpAddress);
+
         if (!Enum.TryParse<PaymentProviderCode>(providerCode, true, out var pc))
             return Results.NotFound(new { error = $"Unknown provider '{providerCode}'." });
 

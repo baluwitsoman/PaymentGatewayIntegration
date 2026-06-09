@@ -35,21 +35,33 @@
                             <label class="form-label small fw-semibold">Sort order</label>
                             <input asp-for="SortOrder" type="number" class="form-control" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">API key @if (Model.HasConfig) { <span class="text-muted small">(leave blank to keep current)</span> }</label>
-                            <input asp-for="ApiKey" type="password" class="form-control" autocomplete="off" />
+                        <div class="col-12">
+                            <div class="alert alert-info small mb-0">
+                                <strong>Paymob has two API generations.</strong>
+                                Newer accounts (incl. Paymob Oman) have <strong>Secret Key + Public Key + HMAC</strong> only — fill those.
+                                Older accounts have a long <strong>API Key</strong> instead — fill that + HMAC.
+                                Not both.
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">HMAC secret @if (Model.HasConfig) { <span class="text-muted small">(leave blank to keep)</span> }</label>
-                            <input asp-for="HmacSecret" type="password" class="form-control" autocomplete="off" />
+                            <label class="form-label small fw-semibold">Secret key <span class="text-muted small">(newer / Unified)</span></label>
+                            <input asp-for="SecretKey" type="password" class="form-control" autocomplete="off"
+                                   placeholder="@(Model.HasConfig ? "leave blank to keep" : "starts with sk_ or similar")" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Public key (optional)</label>
-                            <input asp-for="PublicKey" type="password" class="form-control" autocomplete="off" />
+                            <label class="form-label small fw-semibold">Public key <span class="text-muted small">(newer / Unified)</span></label>
+                            <input asp-for="PublicKey" type="password" class="form-control" autocomplete="off"
+                                   placeholder="@(Model.HasConfig ? "leave blank to keep" : "starts with pk_")" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Secret key (optional)</label>
-                            <input asp-for="SecretKey" type="password" class="form-control" autocomplete="off" />
+                            <label class="form-label small fw-semibold">API key <span class="text-muted small">(older accounts only)</span></label>
+                            <input asp-for="ApiKey" type="password" class="form-control" autocomplete="off"
+                                   placeholder="long JWT-shaped string; leave blank if you have Secret/Public above" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">HMAC secret <span class="text-danger small">(required)</span></label>
+                            <input asp-for="HmacSecret" type="password" class="form-control" autocomplete="off"
+                                   placeholder="@(Model.HasConfig ? "leave blank to keep" : "40-char hex from Paymob portal")" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Display label (customer-facing)</label>

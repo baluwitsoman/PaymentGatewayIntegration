@@ -55,7 +55,7 @@ public class CreateModel : PageModel
         _db.Companies.Add(company);
         await _db.SaveChangesAsync();
 
-        TempData["Success"] = $"Company {company.Name} created. Configure Paymob credentials to enable payments.";
-        return RedirectToPage("Paymob", new { id = company.Id });
+        TempData["Success"] = $"Company {company.Name} created. Configure a payment provider to enable payments.";
+        return RedirectToPage("Providers", new { id = company.Id });
     }
 }
