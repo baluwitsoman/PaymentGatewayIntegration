@@ -15,6 +15,8 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     }
 
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<PaymentProvider> PaymentProviders => Set<PaymentProvider>();
+    public DbSet<CompanyProviderMapping> ProviderMappings => Set<CompanyProviderMapping>();
     public DbSet<CompanyProviderConfig> ProviderConfigs => Set<CompanyProviderConfig>();
     public DbSet<CompanyIntegrationMethod> IntegrationMethods => Set<CompanyIntegrationMethod>();
     public DbSet<CompanyApplication> Applications => Set<CompanyApplication>();

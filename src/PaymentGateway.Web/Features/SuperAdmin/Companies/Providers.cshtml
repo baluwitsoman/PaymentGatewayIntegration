@@ -4,12 +4,15 @@
     ViewData["Title"] = "Providers";
 }
 
-<div class="d-flex align-items-center mb-3">
-    <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
-    <h3 class="mb-0">Providers — @Model.CompanyName</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center">
+        <a asp-page="Index" class="btn btn-link text-decoration-none px-0 me-2"><i class="bi bi-arrow-left"></i></a>
+        <h3 class="mb-0">Providers — @Model.CompanyName</h3>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="MapProviders" asp-route-id="@Model.CompanyId"><i class="bi bi-diagram-3"></i> Map providers</a>
 </div>
 
-<p class="text-muted small">Each supported payment provider is listed below. Configure credentials per provider; methods can then be added under each configured provider.</p>
+<p class="text-muted small">Only providers mapped to this company are listed below. Use <strong>Map providers</strong> to assign which providers this company may use, then configure credentials per provider; methods can then be added under each configured provider.</p>
 
 <div class="card shadow-sm border-0">
     <div class="table-responsive">
@@ -55,6 +58,10 @@
                             }
                         </td>
                     </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">No providers mapped to this company yet. Click <strong>Map providers</strong> to assign one.</td></tr>
                 }
             </tbody>
         </table>

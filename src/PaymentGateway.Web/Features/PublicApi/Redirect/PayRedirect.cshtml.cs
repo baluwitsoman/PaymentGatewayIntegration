@@ -25,7 +25,7 @@ public class PayRedirectModel : PageModel
     public string? Message { get; set; }
     public string CompanyName { get; set; } = "";
     public decimal Amount { get; set; }
-    public string Currency { get; set; } = "EGP";
+    public string Currency { get; set; } = "OMR";
     public string Reference { get; set; } = "";
 
     /// Populated when the customer hasn't yet chosen a method.
@@ -58,7 +58,7 @@ public class PayRedirectModel : PageModel
 
         Reference = order.OrderReference;
         CompanyName = order.Company.Name;
-        Amount = order.AmountMinor / 100m;
+        Amount = order.AmountMinor / 1000m;
         Currency = order.Currency;
 
         // If a method was pre-selected by the calling app, OR the user has already

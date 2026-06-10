@@ -83,7 +83,7 @@ public static class CreatePayment
             ExternalReference = req.ExternalReference,
             Description = req.Description,
             AmountMinor = req.AmountMinor,
-            Currency = (req.Currency ?? "EGP").ToUpperInvariant(),
+            Currency = (req.Currency ?? "OMR").ToUpperInvariant(),
             Status = PaymentOrderStatus.Created,
             SuccessReturnUrl = !string.IsNullOrWhiteSpace(req.SuccessUrlOverride) ? req.SuccessUrlOverride : app.SuccessReturnUrl,
             FailureReturnUrl = !string.IsNullOrWhiteSpace(req.FailureUrlOverride) ? req.FailureUrlOverride : app.FailureReturnUrl,

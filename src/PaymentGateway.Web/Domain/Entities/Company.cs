@@ -10,7 +10,7 @@ public class Company
     public string? ContactEmail { get; set; }
     public string? ContactPhone { get; set; }
     public CompanyStatus Status { get; set; } = CompanyStatus.Active;
-    public string DefaultCurrency { get; set; } = "EGP";
+    public string DefaultCurrency { get; set; } = "OMR";
     public string? Notes { get; set; }
 
     public DateTime CreatedAt { get; set; }

@@ -34,17 +34,28 @@ public class ProvidersModel : PageModel
             .Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count);
 
-        Rows = _registry.All.Select(p =>
-        {
-            var cfg = configs.FirstOrDefault(x => x.ProviderCode == p.Code);
-            return new Row(
-                p.Code,
-                p.DisplayName,
-                cfg != null,
-                cfg?.IsActive ?? false,
-                cfg?.Environment.ToString(),
-                counts.TryGetValue(p.Code, out var n) ? n : 0);
-        }).OrderBy(r => r.Code).ToList();
+        // List is now driven by the per-company mapping ∩ enabled catalog ∩ a
+        // registered adapter — not the full provider registry. SuperAdmin assigns
+        // providers via "Map providers"; only those appear here for credentials.
+        var mappings = await _db.ProviderMappings.IgnoreQueryFilters()
+            .Where(m => m.CompanyId == id && m.IsEnabled).ToListAsync();
+        var catalog = await _db.PaymentProviders.Where(p => p.IsEnabled)
+            .ToDictionaryAsync(p => p.Code);
+
+        Rows = mappings
+            .Where(m => catalog.ContainsKey(m.ProviderCode) && _registry.TryGet(m.ProviderCode, out _))
+            .Select(m =>
+            {
+                var cfg = configs.FirstOrDefault(x => x.ProviderCode == m.ProviderCode);
+                var name = catalog[m.ProviderCode].DisplayName;
+                return new Row(
+                    m.ProviderCode,
+                    name,
+                    cfg != null,
+                    cfg?.IsActive ?? false,
+                    cfg?.Environment.ToString(),
+                    counts.TryGetValue(m.ProviderCode, out var n) ? n : 0);
+            }).OrderBy(r => r.Code).ToList();
         return Page();
     }
 }

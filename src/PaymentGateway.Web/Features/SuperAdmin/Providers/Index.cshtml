@@ -1,0 +1,81 @@
+@page
+@model PaymentGateway.Web.Features.SuperAdmin.Providers.IndexModel
+@{
+    ViewData["Title"] = "Provider catalog";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0"><i class="bi bi-plug"></i> Provider catalog</h3>
+</div>
+
+<p class="text-muted small">
+    The master list of payment providers the platform can offer. Enable a provider to make it
+    available for mapping to companies; disable to retire it (existing data is never deleted).
+    A provider can only be enabled if its integration adapter is present in the build.
+</p>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th>Provider</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                    <th>Adapter</th>
+                    <th class="text-end">Companies</th>
+                    <th class="text-end">Sort</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td class="fw-semibold">@r.DisplayName</td>
+                        <td class="text-muted small">@((short)r.Code) (@r.Code)</td>
+                        <td>
+                            @if (r.IsEnabled)
+                            {
+                                <span class="badge bg-success-subtle text-success">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary">Disabled</span>
+                            }
+                        </td>
+                        <td>
+                            @if (r.HasImpl)
+                            {
+                                <span class="badge bg-info-subtle text-info">Present</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger-subtle text-danger" title="No IPaymentProvider impl registered">Missing</span>
+                            }
+                        </td>
+                        <td class="text-end">@r.MappedCompanies</td>
+                        <td class="text-end">@r.SortOrder</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-page="Edit" asp-route-code="@r.Code">Edit</a>
+                            <form method="post" asp-page-handler="Toggle" asp-route-code="@r.Code" class="d-inline">
+                                @if (r.IsEnabled)
+                                {
+                                    <button class="btn btn-sm btn-outline-warning" type="submit">Disable</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-success" type="submit" disabled="@(!r.HasImpl)">Enable</button>
+                                }
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Rows.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">No providers in the catalog yet. They are seeded automatically on startup from the registered adapters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

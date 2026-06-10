@@ -55,9 +55,12 @@ builder.Services.AddSingleton<IApiKeyGenerator, ApiKeyGenerator>();
 // --- Payment providers -------------------------------------------------------
 // Each provider is a typed HttpClient so HttpMessageHandler rotation works.
 // Add new providers by:
-//   1. implement IPaymentProvider
-//   2. add an enum value to PaymentProviderCode
+//   1. implement IPaymentProvider (the integration adapter — the only irreducible work)
+//   2. add an enum value to PaymentProviderCode (if not already present)
 //   3. AddHttpClient<TProvider>() + AddScoped<IPaymentProvider>(sp => sp.GetRequiredService<TProvider>())
+// On next startup the provider is auto-seeded into the payment_provider catalog.
+// SuperAdmin then: Providers (catalog) → enable → company → Map providers → enter
+// credentials. No DB migration, no new columns, no form edits required.
 builder.Services.AddHttpClient<PaymobProvider>();
 builder.Services.AddScoped<IPaymentProvider>(sp => sp.GetRequiredService<PaymobProvider>());
 builder.Services.AddScoped<IPaymentProviderRegistry, PaymentProviderRegistry>();

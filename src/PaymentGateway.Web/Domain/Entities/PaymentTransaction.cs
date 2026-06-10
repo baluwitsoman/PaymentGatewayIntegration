@@ -20,7 +20,7 @@ public class PaymentTransaction
     public bool Is3DSecure { get; set; }
 
     public long AmountMinor { get; set; }
-    public string Currency { get; set; } = "EGP";
+    public string Currency { get; set; } = "OMR";
 
     public string ProviderIntegrationId { get; set; } = default!;
     public string? SourceType { get; set; }

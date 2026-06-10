@@ -62,8 +62,10 @@ public class ProviderModel : PageModel
         }
         else
         {
-            BaseUrl = DefaultBaseUrl(code);
-            ExtraConfigJson = ExampleExtraConfig(code);
+            // Defaults now come from the editable provider catalog, not a hard-coded switch.
+            var catalog = await _db.PaymentProviders.FirstOrDefaultAsync(p => p.Code == code);
+            BaseUrl = catalog?.DefaultBaseUrl ?? "";
+            ExtraConfigJson = catalog?.ExampleExtraConfigJson ?? "{}";
         }
 
         var orchBase = HttpContext.Request.Scheme + "://" + HttpContext.Request.Host;
@@ -133,20 +135,4 @@ public class ProviderModel : PageModel
         TempData["Success"] = $"{ProviderCode} configuration saved.";
         return RedirectToPage("Providers", new { id = CompanyId });
     }
-
-    private static string DefaultBaseUrl(PaymentProviderCode code) => code switch
-    {
-        PaymentProviderCode.Paymob => "https://accept.paymob.com",
-        PaymentProviderCode.BankMuscat => "https://hosted.bankmuscat.com",
-        PaymentProviderCode.NBO => "https://payments.nbo.om",
-        _ => ""
-    };
-
-    private static string ExampleExtraConfig(PaymentProviderCode code) => code switch
-    {
-        PaymentProviderCode.Paymob => "{ \"iframeId\": \"\" }",
-        PaymentProviderCode.BankMuscat => "{ \"merchantId\": \"\", \"terminalId\": \"\" }",
-        PaymentProviderCode.NBO => "{ \"merchantId\": \"\" }",
-        _ => "{}"
-    };
 }

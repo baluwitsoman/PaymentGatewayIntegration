@@ -13,7 +13,7 @@ public class PaymentOrder
     public string? Description { get; set; }
 
     public long AmountMinor { get; set; }
-    public string Currency { get; set; } = "EGP";
+    public string Currency { get; set; } = "OMR";
 
     public PaymentOrderStatus Status { get; set; } = PaymentOrderStatus.Created;
 

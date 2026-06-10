@@ -25,7 +25,7 @@ public class CreateModel : PageModel
     public string? ContactPhone { get; set; }
 
     [BindProperty, Required, StringLength(3, MinimumLength = 3)]
-    public string DefaultCurrency { get; set; } = "EGP";
+    public string DefaultCurrency { get; set; } = "OMR";
 
     [BindProperty]
     public string? Notes { get; set; }

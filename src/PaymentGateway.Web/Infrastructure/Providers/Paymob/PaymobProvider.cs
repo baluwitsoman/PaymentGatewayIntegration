@@ -272,7 +272,7 @@ public class PaymobProvider : IPaymentProvider
         var isVoided = obj.TryGetProperty("is_voided", out var v) && v.GetBoolean();
         var is3ds = obj.TryGetProperty("is_3d_secure", out var t3) && t3.GetBoolean();
         var amount = obj.GetProperty("amount_cents").GetInt64();
-        var currency = obj.GetProperty("currency").GetString() ?? "EGP";
+        var currency = obj.GetProperty("currency").GetString() ?? "OMR";
         var integrationId = obj.GetProperty("integration_id").GetRawText().Trim('"');
         var errorOccured = obj.TryGetProperty("error_occured", out var eo) && eo.GetBoolean();
         var sourceData = obj.TryGetProperty("source_data", out var sd) ? sd.GetRawText() : null;
